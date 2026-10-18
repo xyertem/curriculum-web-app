@@ -16,6 +16,9 @@
 # next.js
 /.next/
 /out/
+/.agents/
+/.claude/
+/.windsurf/
 
 # production
 /build
@@ -39,4 +42,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-devcreds.txt
+*.txt
+/src/generated/prisma
