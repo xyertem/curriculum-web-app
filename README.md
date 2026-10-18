@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Prisma
+
+This project uses Prisma ORM 7. The CLI configuration lives in
+`prisma.config.ts`; database models live in `prisma/schema.prisma`.
+Set `DATABASE_URL` in `.env` for the CLI connection.
+
+Run `npx prisma validate` to check the schema and `npx prisma generate` to
+generate the client. Keep the Prisma CLI, client, and adapter on compatible
+7.x versions when updating dependencies.
+
 ## Getting Started
 
 First, run the development server:
