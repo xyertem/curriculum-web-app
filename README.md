@@ -3,14 +3,69 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## Prisma
 
 This project uses Prisma ORM 7. The CLI configuration lives in
-`prisma.config.ts`; database models live in `prisma/schema.prisma`.
+`prisma.config.ts`; database models live in separate `.prisma` files under
+`prisma/`. The shared generator and datasource live in `prisma/schema.prisma`.
 Set `DATABASE_URL` in `.env` for the CLI connection.
 
 Run `npx prisma validate` to check the schema and `npx prisma generate` to
 generate the client. Keep the Prisma CLI, client, and adapter on compatible
 7.x versions when updating dependencies.
 
+Authentication models:
+
+- `User` stores the user's identity and bcrypt password hash.
+- `Session` belongs to a user and stores a unique SHA-256 hash of the cookie
+  token and its expiration date. Multiple sessions per user are supported;
+  deleting a user deletes their sessions.
+- These models support custom database-backed authentication. The current
+  JWT cookie helpers do not yet create, verify, renew, or delete database
+  sessions. Wire those operations into the helpers before relying on session
+  revocation. Authentication must reject expired sessions even before cleanup.
+- These are not the Auth.js adapter models; adopting Auth.js requires its
+  adapter schema and configuration.
+
+Content models:
+
+- `Category` groups articles and courses. Each article or course has an optional
+  category; deleting a category leaves its content uncategorized.
+- `Course` contains ordered lessons. Deleting a course also deletes its lessons.
+  Lesson slugs are unique within a course; article and course slugs are unique
+  within their respective models.
+- `Article`, `Course`, and `Lesson` start as `DRAFT`. The application must set
+  `publishedAt` when publishing and filter public queries by `PUBLISHED` (for
+  lessons, check the parent course too). Lower `position` values sort first.
+- Article and lesson `content` stores rich text editor JSON.
+- `Asset` stores S3 object keys and metadata for images, videos, PDFs, and other
+  files. Assets can be shared by articles, courses, and lessons. Deleting content
+  does not delete shared asset records or S3 objects. `sizeBytes` is a `BigInt`;
+  convert it to a string before JSON serialization.
+
+After changing models, run `npx prisma migrate dev --name add_content_models`
+against your development database, then `npx prisma generate`.
+
 ## Getting Started
+
+### Local sample content
+
+With `DATABASE_URL` pointing to your local PostgreSQL database:
+
+```bash
+docker compose up -d --wait
+npx prisma migrate dev
+npx prisma generate
+npm run db:seed
+npm run dev
+```
+
+The seed runs in a transaction and uses upserts to avoid duplicate records.
+It preserves existing edits and creates one category, one published course,
+two published lessons, one published article, and one draft article. Run it
+only against a database where you want sample content.
+
+The home page reads published courses, their published lessons, categories,
+and published article summaries from PostgreSQL on each request. Drafts are
+excluded. The shared application client lives in `app/lib/db.ts`; the seed uses
+its own client so it can run outside Next.js and close its pool afterward.
 
 First, run the development server:
 

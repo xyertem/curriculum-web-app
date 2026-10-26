@@ -1,0 +1,19 @@
+model Lesson {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String
+  description String?       @db.Text
+  // Rich text editor document, for example Tiptap JSON.
+  content     Json?
+  status      ContentStatus @default(DRAFT)
+  position    Int           @default(0)
+  courseId    String
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  assets      Asset[]
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([courseId, slug])
+  @@index([courseId, status, position])
+}
