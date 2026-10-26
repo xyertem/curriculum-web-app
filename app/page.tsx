@@ -1,69 +1,92 @@
-import Image from "next/image";
+import { Suspense } from 'react'
+import { connection } from 'next/server'
+import { db } from '@/app/lib/db'
+
+async function PublishedContent() {
+  // Read at request time inside Suspense with Cache Components enabled.
+  await connection()
+  const [courses, articles] = await Promise.all([
+    db.course.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+      take: 12,
+      select: {
+        id: true, title: true, description: true,
+        category: { select: { name: true } },
+        lessons: {
+          where: { status: 'PUBLISHED' },
+          orderBy: [{ position: 'asc' }, { id: 'asc' }],
+          select: { id: true, title: true, description: true },
+        },
+      },
+    }),
+    db.article.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: [{ position: 'asc' }, { id: 'asc' }],
+      take: 12,
+      select: {
+        id: true, title: true, description: true,
+        category: { select: { name: true } },
+      },
+    }),
+  ])
+
+  return (
+    <div className="space-y-12">
+      <section aria-labelledby="courses-heading">
+        <h2 id="courses-heading" className="mb-5 text-2xl font-semibold">Eğitimler</h2>
+        {courses.length === 0 ? <p>Henüz yayınlanmış eğitim bulunmuyor.</p> : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {courses.map((course) => (
+              <article key={course.id} className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
+                {course.category && <p className="mb-2 text-sm text-blue-600 dark:text-blue-400">{course.category.name}</p>}
+                <h3 className="text-xl font-semibold">{course.title}</h3>
+                <p className="mt-2 text-zinc-600 dark:text-zinc-400">{course.description}</p>
+                <h4 className="mt-6 font-medium">Dersler</h4>
+                {course.lessons.length === 0 ? <p className="mt-2 text-sm">Henüz yayınlanmış ders bulunmuyor.</p> : (
+                  <ol className="mt-3 list-decimal space-y-3 pl-5">
+                    {course.lessons.map((lesson) => (
+                      <li key={lesson.id}>
+                        <p className="font-medium">{lesson.title}</p>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">{lesson.description}</p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+      <section aria-labelledby="articles-heading">
+        <h2 id="articles-heading" className="mb-5 text-2xl font-semibold">Makaleler</h2>
+        {articles.length === 0 ? <p>Henüz yayınlanmış makale bulunmuyor.</p> : (
+          <div className="grid gap-6 md:grid-cols-2">
+            {articles.map((article) => (
+              <article key={article.id} className="rounded-xl border border-zinc-200 p-6 dark:border-zinc-800">
+                {article.category && <p className="mb-2 text-sm text-blue-600 dark:text-blue-400">{article.category.name}</p>}
+                <h3 className="text-xl font-semibold">{article.title}</h3>
+                <p className="mt-2 text-zinc-600 dark:text-zinc-400">{article.description}</p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+    <main className="mx-auto w-full max-w-5xl px-6 py-16">
+      <header className="mb-12">
+        <p className="mb-3 text-sm font-medium uppercase tracking-widest text-blue-600 dark:text-blue-400">Öğrenmeye başla</p>
+        <h1 className="text-4xl font-bold tracking-tight">Eğitimler ve makaleler</h1>
+        <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">Yeni beceriler edinmek için eğitimleri ve yazıları keşfet.</p>
+      </header>
+      <Suspense fallback={<p role="status">İçerikler yükleniyor…</p>}>
+        <PublishedContent />
+      </Suspense>
+    </main>
+  )
 }

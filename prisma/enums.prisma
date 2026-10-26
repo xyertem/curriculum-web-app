@@ -1,0 +1,11 @@
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  PDF
+  OTHER
+}

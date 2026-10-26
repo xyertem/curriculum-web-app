@@ -1,0 +1,19 @@
+model Article {
+  id          String        @id @default(cuid())
+  title       String
+  slug        String        @unique
+  description String?       @db.Text
+  // Rich text editor document, for example Tiptap JSON.
+  content     Json?
+  status      ContentStatus @default(DRAFT)
+  position    Int           @default(0)
+  categoryId  String?
+  category    Category?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  assets      Asset[]
+  publishedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId, status, position])
+  @@index([status, publishedAt])
+}

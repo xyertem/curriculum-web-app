@@ -1,0 +1,16 @@
+model Asset {
+  id              String    @id @default(cuid())
+  type            AssetType
+  fileName        String
+  mimeType        String
+  sizeBytes       BigInt
+  // Store the S3 object key, not a temporary signed URL or the file itself.
+  storageKey      String    @unique
+  altText         String?
+  durationSeconds Int?
+  articles        Article[]
+  courses         Course[]
+  lessons         Lesson[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
