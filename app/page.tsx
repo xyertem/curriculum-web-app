@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { connection } from 'next/server'
 import { db } from '@/app/lib/db'
 
@@ -80,6 +81,11 @@ export default function Home() {
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-16">
       <header className="mb-12">
+        <nav aria-label="Hesap" className="mb-8 flex gap-5 text-sm underline">
+          <Link href="/login">Giriş yap</Link>
+          <Link href="/signup">Kayıt ol</Link>
+          <Link href="/profile">Hesabım</Link>
+        </nav>
         <p className="mb-3 text-sm font-medium uppercase tracking-widest text-blue-600 dark:text-blue-400">Öğrenmeye başla</p>
         <h1 className="text-4xl font-bold tracking-tight">Eğitimler ve makaleler</h1>
         <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">Yeni beceriler edinmek için eğitimleri ve yazıları keşfet.</p>

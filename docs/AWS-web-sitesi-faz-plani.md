@@ -17,7 +17,7 @@ Tarih: 12 Ekim 2026
 | Arayüz ve backend | Next.js + TypeScript |
 | Tasarım | Tailwind CSS + shadcn/ui |
 | Veritabanı | PostgreSQL + Prisma |
-| Admin kimlik doğrulama | Auth.js; izin verilen tek hesap |
+| Admin kimlik doğrulama | E-posta/parola + veritabanı oturumu; admin için izin verilen tek hesap |
 | İçerik editörü | Tiptap veya benzeri bir zengin metin editörü |
 | Çalıştırma | Lightsail, Docker Compose ve Caddy |
 | Dosya depolama | Amazon S3 |
@@ -38,20 +38,27 @@ Tamamlanma ölçütü: ekran listesi, içerik modeli ve ilk sürüm sınırları
 
 ## Faz 2 — Yerel proje ve veritabanı
 
-- [ ] Git deposunu ve Next.js TypeScript projesini oluştur.
-- [ ] Tailwind ve arayüz bileşenlerini kur.
-- [ ] Docker Compose ile yerel PostgreSQL kur.
-- [ ] Prisma şemasını oluştur: Category, Article, Course, Lesson, Asset.
-- [ ] İçeriklere slug, başlık, açıklama, durum, sıralama ve tarih alanlarını ekle.
-- [ ] Auth.js yönteminin gerektirdiği kullanıcı/oturum tablolarını ekle.
-- [ ] Migration ve örnek içerik hazırlama komutlarını oluştur.
-- [ ] Ortam değişkenleri için örnek dosya oluştur; gerçek sırları Git dışında tut.
+- [x] Git deposunu ve Next.js TypeScript projesini oluştur.
+- [x] Tailwind ve arayüz bileşenlerini kur.
+- [x] Docker Compose ile yerel PostgreSQL kur.
+- [x] Prisma şemasını oluştur: Category, Article, Course, Lesson, Asset.
+- [x] İçeriklere slug, başlık, açıklama, durum, sıralama ve tarih alanlarını ekle.
+- [x] Veritabanı oturumu için User ve Session tablolarını ekle.
+- [x] Migration ve örnek içerik hazırlama komutlarını oluştur.
+- [x] Ortam değişkenleri için örnek dosya oluştur; gerçek sırları Git dışında tut.
 
 Tamamlanma ölçütü: uygulama yerelde açılıyor ve örnek içerikler veritabanından okunuyor.
 
+27 Ekim 2026 kontrolü: Faz 2 tamamlandı. TypeScript, lint, Prisma doğrulaması
+ve veritabanı oturumu testleri başarılı. Yerel PostgreSQL sağlıklı ve iki
+migration uygulanmış durumda. Ana sayfa örnek kurs, ders ve makaleleri
+veritabanından gösteriyor; taslak makale görünmüyor. Giriş ve kayıt sayfaları
+HTTP 200 döndürüyor. `.env` ve `docs/dbcreds.txt` Git dışında;
+`.env.example` Git'e eklenebilir durumda.
+
 ## Faz 3 — Admin girişi ve içerik yönetimi
 
-- [ ] Auth.js ile admin girişini kur; mümkünse MFA kullanan Google/GitHub hesabını izin listesine al.
+- [ ] Veritabanı oturumunu kullanan admin girişini kur; izin verilen tek hesabı ve ek doğrulamayı belirle.
 - [ ] Her sunucu işlemi ve yükleme izninde admin kimliğini doğrula.
 - [ ] Makale ekleme, düzenleme, silme ve zengin metin editörünü geliştir.
 - [ ] Eğitim ve ders yönetimini geliştir.

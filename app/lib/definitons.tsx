@@ -3,9 +3,9 @@ import * as z from 'zod'
 export const SignupFormSchema = z.object({
   name: z
     .string()
-    .min(2, { error: 'Name must be at least 2 characters long.' })
-    .trim(),
-  email: z.email({ error: 'Please enter a valid email.' }).trim(),
+    .trim()
+    .min(2, { error: 'Name must be at least 2 characters long.' }),
+  email: z.string().trim().toLowerCase().pipe(z.email({ error: 'Please enter a valid email.' })),
   password: z
     .string()
     .min(8, { error: 'Be at least 8 characters long' })
@@ -14,7 +14,17 @@ export const SignupFormSchema = z.object({
     .regex(/[^a-zA-Z0-9]/, {
       error: 'Contain at least one special character.',
     })
-    .trim(),
+    .refine((value) => new TextEncoder().encode(value).length <= 72, {
+      error: 'Password must be at most 72 bytes long.',
+    }),
+})
+
+export const LoginFormSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email({ error: 'Please enter a valid email.' })),
+  password: z.string().min(1, { error: 'Please enter your password.' })
+    .refine((value) => new TextEncoder().encode(value).length <= 72, {
+      error: 'Password must be at most 72 bytes long.',
+    }),
 })
 
 export type FormState =

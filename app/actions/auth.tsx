@@ -1,51 +1,71 @@
 'use server'
 
+import bcrypt from 'bcrypt'
+import { redirect } from 'next/navigation'
+import { Prisma } from '@/src/generated/prisma/client'
+import { db } from '@/app/lib/db'
+import { LoginFormSchema, SignupFormSchema, type FormState } from '@/app/lib/definitons'
 import { createSession, deleteSession } from '@/app/lib/session'
-import bcrypt from '@types/'
 
-export async function signup(state: FormState, formData: FormData) {
-  // 1. Validate form fields
-   const validatedFields = SignupFormSchema.safeParse({
+export async function signup(_state: FormState, formData: FormData): Promise<FormState> {
+  const validatedFields = SignupFormSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
     password: formData.get('password'),
   })
-  // If any form fields are invalid, return early
+
   if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-    }
+    return { errors: validatedFields.error.flatten().fieldErrors }
   }
-  // 2. Prepare data for insertion into database
+
   const { name, email, password } = validatedFields.data
-  // e.g. Hash the user's password before storing it
-  const hashedPassword = await bcrypt.hash(password, 10)
-
-  // 3. Insert the user into the database or call an Auth Library's API
-  const data = await db
-    .insert(users)
-    .values({
-      name,
-      email,
-      password: hashedPassword,
+  let user: { id: string }
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10)
+    user = await db.user.create({
+      data: { name, email, password: hashedPassword },
+      select: { id: true },
     })
-    .returning({ id: users.id })
-
-  const user = data[0]
-
-  if (!user) {
-    return {
-      message: 'An error occurred while creating your account.',
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return { errors: { email: ['Bu e-posta adresi zaten kullanılıyor.'] } }
     }
+    return { message: 'Hesap oluşturulamadı. Lütfen tekrar deneyin.' }
   }
 
- await createSession(user.id)
-  // 5. Redirect user
- redirect('/profile')
+  await createSession(user.id)
+  redirect('/profile')
 }
 
-function redirect(arg0: string) {
-    throw new Error('Function not implemented.')
+export async function login(_state: FormState, formData: FormData): Promise<FormState> {
+  const validatedFields = LoginFormSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  })
+  if (!validatedFields.success) {
+    return { errors: validatedFields.error.flatten().fieldErrors }
+  }
+
+  let user: { id: string; password: string } | null
+  let passwordMatches: boolean
+  try {
+    user = await db.user.findUnique({
+      where: { email: validatedFields.data.email },
+      select: { id: true, password: true },
+    })
+    // Still perform a hash comparison for an unknown account.
+    passwordMatches = await bcrypt.compare(
+      validatedFields.data.password,
+      user?.password ?? '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+    )
+  } catch {
+    return { message: 'Giriş yapılamadı. Lütfen tekrar deneyin.' }
+  }
+  if (!user || !passwordMatches) {
+    return { message: 'E-posta adresi veya parola hatalı.' }
+  }
+  await createSession(user.id)
+  redirect('/profile')
 }
 
 export async function logout() {

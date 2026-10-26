@@ -17,12 +17,27 @@ Authentication models:
 - `Session` belongs to a user and stores a unique SHA-256 hash of the cookie
   token and its expiration date. Multiple sessions per user are supported;
   deleting a user deletes their sessions.
-- These models support custom database-backed authentication. The current
-  JWT cookie helpers do not yet create, verify, renew, or delete database
-  sessions. Wire those operations into the helpers before relying on session
-  revocation. Authentication must reject expired sessions even before cleanup.
-- These are not the Auth.js adapter models; adopting Auth.js requires its
-  adapter schema and configuration.
+- Authentication uses custom database sessions with email/password login.
+  No Auth.js adapter or JWT signing secret is required. Passwords remain bcrypt
+  hashes; `bcrypt`, `zod`, and `server-only` are still required.
+- `/signup` creates a user and session; `/login` creates a fresh session after
+  password verification. `/profile` requires a valid, unexpired database session.
+  It is an account page, not an admin authorization check.
+- `app/lib/session.tsx` creates random 32-byte tokens and stores only their
+  SHA-256 hashes in `Session`. The raw token lives in a seven-day HttpOnly,
+  SameSite=Lax cookie with Secure enabled in production. Authentication never
+  trusts the presence of the cookie alone. Old token cookies are not accepted.
+- `getSession()` is read-only and may run in Server Components. Use
+  `requireSession()` in protected server code. Session mutations must run in
+  Server Actions or Route Handlers. `updateSession()` explicitly extends an
+  active session by seven days; expired or revoked sessions cannot be renewed.
+  Renewal is not automatic. Logout removes both the database row and cookie.
+- Expired rows are rejected immediately. They can be periodically removed with
+  `db.session.deleteMany({ where: { expiresAt: { lte: new Date() } } })`.
+
+Run `npm run test:session` against local PostgreSQL after applying migrations.
+It checks signup, login, renewal, expiration, revocation, logout, and isolation
+between browsers. The test deletes its own user and sessions when finished.
 
 Content models:
 
@@ -49,6 +64,16 @@ against your development database, then `npx prisma generate`.
 
 With `DATABASE_URL` pointing to your local PostgreSQL database:
 
+For a fresh checkout, copy `.env.example` to `.env` first. Set
+`POSTGRES_PASSWORD` and use that same password in `DATABASE_URL` (URL-encode
+special characters in the URL). Keep existing `.env` values when upgrading an
+existing checkout. `.env` is ignored by Git; `.env.example` contains placeholders
+and is committed. Compose reads its PostgreSQL settings from `.env`.
+
+Changing these settings does not change credentials in an existing PostgreSQL
+volume. Keep them aligned with the initialized database; update the database
+password explicitly if you need to rotate it.
+
 ```bash
 docker compose up -d --wait
 npx prisma migrate dev
@@ -66,6 +91,17 @@ The home page reads published courses, their published lessons, categories,
 and published article summaries from PostgreSQL on each request. Drafts are
 excluded. The shared application client lives in `app/lib/db.ts`; the seed uses
 its own client so it can run outside Next.js and close its pool afterward.
+
+### UI components
+
+Tailwind CSS 4 uses the existing Turbopack loader. shadcn/ui is configured in
+`components.json` with Radix components and a neutral theme. `Button`, `Input`,
+`Label`, and `Card` live in `components/ui/` and are used by the login and signup
+pages. The theme follows the system light/dark setting and uses the existing
+Geist fonts.
+
+Import components from `@/components/ui/button` (or the corresponding filename).
+Add more components with `npx shadcn add <component>`.
 
 First, run the development server:
 
