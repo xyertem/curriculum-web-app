@@ -1,6 +1,7 @@
 import 'server-only'
 import { createHash, randomBytes } from 'node:crypto'
 import { cookies } from 'next/headers'
+import { connection } from 'next/server'
 import { redirect } from 'next/navigation'
 import { db } from '@/app/lib/db'
 
@@ -41,6 +42,8 @@ export async function createSession(userId: string) {
 
 // Read-only: safe to use in Server Components. Never trust cookie presence alone.
 export async function getSession() {
+  // Expiration must be checked against request time, never prerender time.
+  await connection()
   const token = (await cookies()).get('session')?.value
   if (!token || !TOKEN_PATTERN.test(token)) return null
 
