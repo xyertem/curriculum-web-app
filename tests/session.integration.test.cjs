@@ -19,6 +19,7 @@ const cookieStore = {
 }
 for (const [name, exports] of [
   ['next/headers', { cookies: async () => cookieStore }],
+  ['next/server', { connection: async () => {} }],
   ['next/navigation', { redirect: (path) => { throw new Error(`REDIRECT:${path}`) } }],
 ]) {
   const filename = require.resolve(name)
