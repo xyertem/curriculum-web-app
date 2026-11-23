@@ -52,7 +52,7 @@ export async function getSession() {
     select: {
       id: true,
       expiresAt: true,
-      user: { select: { id: true, name: true, email: true } },
+      user: { select: { id: true, name: true, email: true, role: true } },
     },
   })
 }
@@ -60,6 +60,13 @@ export async function getSession() {
 export async function requireSession() {
   const session = await getSession()
   if (!session) redirect('/login')
+  return session
+}
+
+// Call in each admin page, Server Action, or Route Handler before accessing data.
+export async function requireAdmin() {
+  const session = await requireSession()
+  if (session.user.role !== 'ADMIN') redirect('/profile')
   return session
 }
 

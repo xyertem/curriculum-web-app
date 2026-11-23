@@ -53,11 +53,13 @@ test('database session and authentication lifecycle', async (t) => {
   assert.equal(cookieValues.size, 0)
 
   const credentials = { name: 'Session Test', email, password: 'Testing123!' }
-  await assert.rejects(actions.signup(undefined, form(credentials)), /REDIRECT:\/profile/)
+  // Public signup must ignore an attempted admin role assignment.
+  await assert.rejects(actions.signup(undefined, form({ ...credentials, role: 'ADMIN' })), /REDIRECT:\/profile/)
   const firstToken = cookieValues.get('session')
   assert.match(firstToken, /^[A-Za-z0-9_-]{43}$/)
   const user = await db.user.findUniqueOrThrow({ where: { email } })
   assert.notEqual(user.password, credentials.password)
+  assert.equal(user.role, 'USER')
   const firstRow = await db.session.findUniqueOrThrow({ where: { tokenHash: hash(firstToken) } })
   assert.notEqual(firstRow.tokenHash, firstToken)
   assert.equal(firstRow.userId, user.id)
@@ -67,6 +69,13 @@ test('database session and authentication lifecycle', async (t) => {
   assert.equal(cookieOptions.get('session').expires.getTime(), firstRow.expiresAt.getTime())
   assert.equal((await sessions.getSession()).user.id, user.id)
   assert.equal('password' in (await sessions.getSession()).user, false)
+
+  await assert.rejects(sessions.requireAdmin(), /REDIRECT:\/profile/)
+  await db.user.update({ where: { id: user.id }, data: { role: 'ADMIN' } })
+  assert.equal((await sessions.requireAdmin()).user.id, user.id)
+  // A role change takes effect immediately, without issuing a new session.
+  await db.user.update({ where: { id: user.id }, data: { role: 'USER' } })
+  await assert.rejects(sessions.requireAdmin(), /REDIRECT:\/profile/)
 
   const duplicate = await actions.signup(undefined, form(credentials))
   assert.ok(duplicate.errors.email)
@@ -112,6 +121,7 @@ test('database session and authentication lifecycle', async (t) => {
   cookieValues.set('session', logoutToken)
   assert.equal(await sessions.getSession(), null)
   await assert.rejects(sessions.requireSession(), /REDIRECT:\/login/)
+  await assert.rejects(sessions.requireAdmin(), /REDIRECT:\/login/)
   cookieValues.set('session', otherBrowserToken)
   assert.equal((await sessions.requireSession()).user.id, user.id)
 })

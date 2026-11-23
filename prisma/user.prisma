@@ -3,6 +3,7 @@ model User {
   name      String
   email     String    @unique
   password  String
+  role      Role      @default(USER)
   sessions  Session[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
